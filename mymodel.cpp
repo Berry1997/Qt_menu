@@ -1,9 +1,10 @@
-#include "MyModel.h"
+#include "mymodel.h"
 #include <iostream>
+#include "data.h"
 
 MyModel::MyModel(QObject *parent)
     : QAbstractListModel(parent)
-    , mList(nullptr)
+    , mDatas(nullptr)
 {
     std::cout<<"inside Model constructed"<<std::endl;
 }
@@ -16,36 +17,33 @@ int MyModel::rowCount(const QModelIndex &parent) const
         return 0;
 
     // FIXME: Implement me!
-    return mList->items().size();
+
+    return mDatas->items().size();
 }
 
 QVariant MyModel::data(const QModelIndex &index, int role) const
 {
-
     if (!index.isValid())
         return QVariant();
-    const unit item = mList->items().at(index.row());
+    const unit item = mDatas->items().at(index.row());
 
     // FIXME: Implement me!
     switch (role) {
     case NameRole:
-        return QVariant(QStringLiteral("!11"));
+        return QVariant(item.name);
     case LevelRole:
-        return QVariant(QStringLiteral("!21"));
+        return QVariant(item.level);
     case ParentRole:
         return QVariant(item.parent);
-    case SublevelRole:
-        return item.subNodes;
     }
     return QVariant();
 }
 
 bool MyModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if (!mList)
+    if (!mDatas)
             return false;
-
-        unit item = mList->items().at(index.row());
+        unit item = mDatas->items().at(index.row());
         switch (role) {
         case NameRole:
             item.name = value.toString();
@@ -56,13 +54,11 @@ bool MyModel::setData(const QModelIndex &index, const QVariant &value, int role)
         case ParentRole:
             item.parent = value.toString();
             break;
-        case SublevelRole:
-            item.subNodes.append(value);
-            break;
+
         }
-    if (mList->setItemAt(index.row(), item)) {
+    if (mDatas->setItemAt(index.row(), item)) {
         // FIXME: Implement me!
-        emit dataChanged(index, index, QVector<int>() << role);
+        emit dataChanged(index, index, QVector<int>{role});
         return true;
     }
     return false;
@@ -82,36 +78,38 @@ QHash<int, QByteArray> MyModel::roleNames() const
     names[NameRole] = "name";
     names[LevelRole] = "level";
     names[ParentRole] = "parent";
-    names[SublevelRole] = "subNode";
     return names;
 }
 
-Data *MyModel::list() const
+Data *MyModel::datas() const
 {
-    return mList;
+    return mDatas;
 }
 
-void MyModel::setList(Data *list)
+void MyModel::setDatas(Data *data)
 {
     beginResetModel();
-    if (mList)
-        mList->disconnect(this);
-    mList = list;
-    if (mList) {
-        connect(mList, &Data::preItemAppended, this, [=]() {
-            const int index = mList->items().size();
-            beginInsertRows(QModelIndex(), index, index);
+    if (mDatas)
+        mDatas->disconnect(this);
+    delete mDatas;
+    mDatas = data;
+    if (mDatas) {
+        connect(mDatas, &Data::preItemAppended, this, [=](int number) {
+            const int index = mDatas->items().size();
+            beginInsertRows(QModelIndex(), number, number);
         });
-        connect(mList, &Data::postItemAppended, this, [=]() {
+        connect(mDatas, &Data::postItemAppended, this, [=]() {
             endInsertRows();
         });
 
-        connect(mList, &Data::preItemRemoved, this, [=](int index) {
+        connect(mDatas, &Data::preItemRemoved, this, [=](int index) {
             beginRemoveRows(QModelIndex(), index, index);
         });
-        connect(mList, &Data::postItemRemoved, this, [=]() {
+
+        connect(mDatas, &Data::postItemRemoved, this, [=]() {
             endRemoveRows();
         });
     }
+
     endResetModel();
 }

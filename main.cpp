@@ -1,7 +1,9 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 #include "data.h"
-#include "MyModel.h"
+#include "mymodel.h"
+
 int main(int argc, char *argv[])
 {
 #if defined(Q_OS_WIN)
@@ -12,10 +14,12 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     qmlRegisterType<MyModel>("Model",1,0,"MyModel");
+
+    //set class data of property for MyModel --> cannot be created into an object
     qmlRegisterUncreatableType<Data>("Model",1,0,"Data",QStringLiteral("Data should not be created in QML"));
 
     Data data;
-    engine.rootContext()->setContextProperty(QStringLiteral("data"), &data);
+    engine.rootContext()->setContextProperty(QStringLiteral("info"), &data);
 
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
     if (engine.rootObjects().isEmpty())
